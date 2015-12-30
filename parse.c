@@ -91,16 +91,25 @@ int type(char *g)
     if (result < 2 ) return result;
     if ((parse(g)==2) && (parse(mytail(g))==2) return 4;
     
+    
 }
 
+char *negate(char *g){
+    char* copy = malloc((1+strlen(g))*sizeof(char));
+    memmove(copy+1, g, strlen(g));
+    copy[0] = '~';
+    return copy;
+}
 char *firstexp(char *g)
 {/* for alpha and beta formulas*/
-  if (parse(g)==3)/*binary fmla*/  switch(bin(g))
-		     {case('v'): return(??);break;
-		     case('^'): return(??);break;
-		     case('>'): return(??);break;
-		     default:printf("what the f**k?");return(0);
-		     }
+  if (parse(g)==3)/*binary fmla*/  
+    switch(bin(g))
+    {
+         case('v'): return(??);break;
+         case('^'): return(??);break;
+         case('>'): return(??);break;
+         default:printf("what the f**k?");return(0);
+    }
   if ((parse(g)==2)&& (parse(mytail(g))==2)/*double neg*/) return(mytail(mytail(g)));/*throw away first two chars*/
 
   if ((parse(g)==2)&&parse(mytail(g))==3) /*negated binary*/ 

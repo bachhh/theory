@@ -42,28 +42,6 @@ int bin_index(char *g)
     return 0;
 }
 
-int parse(char *g)
-{/* return 1 if a proposition, 2 if neg, 3 if binary, ow 0*/
-    
-    // Check for negation,
-    if (g[0] == '~' && parse(mytail(g)) != 0 ) {
-        return 2;
-    }
-    
-    // Check for proposition
-    if (prop(g[0]) == 1){
-        return 1;
-    }
-    
-    // Check for binary fml
-    if (g[0] == '(' && parse(partone(g)) != 0 && parse(parttwo(g)) != 0){
-        return 3;
-    }
-    
-    return 0;
-    
-}
-
 char *partone(char *g)
 {/* for binary connective formulas, returns first part*/
     int bc_index = bin_index(g);
@@ -78,6 +56,30 @@ char *parttwo(char *g)
     return part;
 }
 
+
+int parse(char *g)
+{/* return 1 if a proposition, 2 if neg, 3 if binary, ow 0*/
+    
+    // Check for negation,
+    if (g[0] == '~' && parse(mytail(g)) != 0 ) {
+        return 2;
+    }
+    
+    // Check for proposition
+    if (prop(g) == 1){
+        return 1;
+    }
+    
+    // Check for binary fml
+    if (g[0] == '(' && parse(partone(g)) != 0 && parse(parttwo(g)) != 0){
+        return 3;
+    }
+    
+    return 0;
+    
+}
+
+
 char bin(char *g)
 {/*for binary connective formulas, returns binary connective*/
     int bc_index = bin_index(g);
@@ -85,13 +87,30 @@ char bin(char *g)
 }
 
 
+
 int type(char *g)
 {/*return 0 if not a formula, 1 for literal, 2 for alpha, 3 for beta, 4 for double negation*/
     int result = parse(g);
-    if (result < 2 ) return result;
-    if ((parse(g)==2) && (parse(mytail(g))==2) return 4;
-    
-    
+    if ( result == 1 || result == 2 ){
+        return 1;
+    } 
+    else if ((parse(g)==2) && parse(mytail(g))==2) return 4;
+    else if (g[0] == '~'){
+        switch(bin(g)){
+            case('v'): return(2);break;
+            case('>'): return(2);break;
+            case('^'): return(3);break;
+        
+        }
+    }
+    else if(g[0] == '('){
+        switch(bin(g)){
+            case('v'): return(3);break;
+            case('^'): return(2);break;
+            case('>'): return(3);break;
+        }   
+    }
+    else return 0;
 }
 
 char *negate(char *g){
@@ -105,9 +124,9 @@ char *firstexp(char *g)
   if (parse(g)==3)/*binary fmla*/  
     switch(bin(g))
     {
-         case('v'): return(??);break;
-         case('^'): return(??);break;
-         case('>'): return(??);break;
+         case('v'): return partone(g);break;
+         case('^'): return partone(g);break;
+         case('>'): return negate(partone(g));break;
          default:printf("what the f**k?");return(0);
     }
   if ((parse(g)==2)&& (parse(mytail(g))==2)/*double neg*/) return(mytail(mytail(g)));/*throw away first two chars*/
@@ -115,14 +134,29 @@ char *firstexp(char *g)
   if ((parse(g)==2)&&parse(mytail(g))==3) /*negated binary*/ 
 	switch(bin(mytail(g)))
 	{
-		case('v'):return(??);break;
-		case('^'):return(??);break;
-		case('>'): return(??);break;
+		case('v'): return negate(partone(g));break;
+		case('^'): return negate(partone(g));break;
+		case('>'): return partone(g);break;
 	} 
   return(0);
 }		     
 
 
 char *secondexp(char *g)
-{/* for alpha and beta formulas, but not for double negations, returns the second expansion formula*/
-}		     
+{/* for alpha and beta formulas, but not for double negations, returns the second expansion formula*/ 
+    if (parse(g) == 3) /*binary fmla*/{
+        switch(bin(g)){
+            case('v'): return parttwo(g);break;
+            case('^'): return parttwo(g);break;
+            case('>'): return parttwo(g); break;
+        }
+    }
+    else if( parse(g)==2 && parse(mytail(g))==3){
+        switch(bin(g)){
+            case('v'): return negate(parttwo(g)); break;
+            case('^'): return negate(parttwo(g)); break;
+            case('>'): return negate(parttwo(g)); break;
+        }   
+    }   
+}
+		     

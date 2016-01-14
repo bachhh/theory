@@ -31,16 +31,19 @@ struct tableau {
 
 char *segment(char *list, int x, int y)/* characters from pos x up to y-1, provided x<=y*/
 {
+    if (y < x) printf("Segment function Error ! negative string length");
     char* copy = malloc((y-x+1)*sizeof(char));
-    memmove(copy, list, y-x);
-    copy[y] = '\0';
+    for (int z = 0;  z < y-x; z++){
+    	copy[z] = list[x+z];
+    }
+    copy[y-x]='\0';
     return copy;
 }
 
 /* Basics.  Recognise propositions and connectives.  */
 
 int prop(char x)
-{if((x='p')||(x='q')||(x='r')||(x='s')) return(1);else return(0);}
+{if((x=='p')||(x=='q')||(x=='r')||(x=='s')) return(1);else return(0);}
 
 int bc(char x)
 {if ((x=='v')||(x=='^')||(x=='>')) return(1);else return(0);}
@@ -53,9 +56,8 @@ int bin_index(char *g)
     int x = 0;
     for ( x = 0; g[x] != '\0'; x++){
         if (g[x] == '(') brackets++;
-        if (x > 50) printf("What the fk ??? \n");
         else if (g[x] == ')') brackets--;
-        else if (bc(g[x]) == 1 && brackets == 1) return x;
+        else if (brackets == 1&&bc(g[x]) == 1 ) return x;
     }
     return 0;
 }
@@ -63,14 +65,21 @@ int bin_index(char *g)
 char *partone(char *g)
 {/* for binary connective formulas, returns first part*/
     int bc_index = bin_index(g);
-    char* part = segment(g, 0, bc_index-1);
+    char* part = segment(g, 1, bc_index);
     return part;
 }
 
 char *parttwo(char *g)
 {/* for binary connective formulas, returns second part*/
     int bc_index = bin_index(g);
-    char* part = segment(g, bc_index+1, strlen(g));
+    int brackets=0; int x;
+    // Correctly get the last ')' index
+    for (x=0;g[x]!='\0';x++){
+        if(g[x]=='('){brackets++;continue;}
+        if(g[x]==')'&&brackets==1){break;}
+        if(g[x]==')'){brackets--;continue;}
+    }
+    char* part = segment(g, bc_index+1, x);
     return part;
 }
 
@@ -79,12 +88,12 @@ int parse(char *g)
 {/* return 1 if a proposition, 2 if neg, 3 if binary, ow 0*/
     
     // Check for negation,
-    if (g[0] == '~' && parse(mytail(g)) != 0 ) {
+    if (g[0] == '-' && parse(mytail(g)) != 0 ) {
         return 2;
     }
     
     // Check for proposition
-    if (prop(g) == 1){
+    if (prop(g[0]) == 1){
         return 1;
     }
     
@@ -108,12 +117,12 @@ char bin(char *g)
 
 int type(char *g)
 {/*return 0 if not a formula, 1 for literal, 2 for alpha, 3 for beta, 4 for double negation*/
-    int result = parse(g);
-    if ( result == 1 || result == 2 ){
+    
+    if (prop(g[0])==1||g[0]=='-'&&prop(g[1])==1)  {
         return 1;
     } 
-    else if ((parse(g)==2) && parse(mytail(g))==2) return 4;
-    else if (g[0] == '~'){
+    else if ((g[0]=='-') && parse(mytail(g))==2) return 4;
+    else if (g[0] == '-'&&parse(g)==3){
         switch(bin(g)){
             case('v'): return(2);break;
             case('>'): return(2);break;
@@ -121,7 +130,7 @@ int type(char *g)
         
         }
     }
-    else if(g[0] == '('){
+    else if(g[0] == '('&&parse(g)==3){
         switch(bin(g)){
             case('v'): return(3);break;
             case('^'): return(2);break;
@@ -132,50 +141,64 @@ int type(char *g)
 }
 
 char *negate(char *g){
-    char* copy = malloc((1+strlen(g))*sizeof(char));
-    memmove(copy+1, g, strlen(g));
-    copy[0] = '~';
-    return copy;
+    int length = strlen(g);
+    char* temp = malloc((length+2)*sizeof(char));
+    temp[0]='-';
+    for(int i=1;i<length+2; i++){
+        temp[i]=g[i-1];
+    }
+    temp[length+1]='\0';
+    return temp;
 }
+
 char *firstexp(char *g)
 {/* for alpha and beta formulas*/
-  if (parse(g)==3)/*binary fmla*/  
-    switch(bin(g))
-    {
-         case('v'): return partone(g);break;
-         case('^'): return partone(g);break;
-         case('>'): return negate(partone(g));break;
-         default:printf("what the f**k?");return(0);
+    if (g[0]=='-'&&parse(mytail(g))==3){ /*negated binary*/ 
+        switch(bin(mytail(g)))
+        {
+            case('v'): return negate(partone(g));break;
+            case('^'): return negate(partone(g));break;
+            case('>'): return partone(g);break;
+            default:printf("what the f**k?");return(0); // This line was originally in your template Robin :(
+        }
     }
-  if ((parse(g)==2)&& (parse(mytail(g))==2)/*double neg*/) return(mytail(mytail(g)));/*throw away first two chars*/
 
-  if ((parse(g)==2)&&parse(mytail(g))==3) /*negated binary*/ 
-  switch(bin(mytail(g)))
-  {
-    case('v'): return negate(partone(g));break;
-    case('^'): return negate(partone(g));break;
-    case('>'): return partone(g);break;
-  } 
-  return(0);
+    else if (parse(g)==3){/*binary fmla*/  
+        switch(bin(g))
+        {
+             case('v'): return partone(g);break;
+             case('^'): return partone(g);break;
+             case('>'): return negate(partone(g));break;
+             default:printf("what the f**k?");return(0);
+        }
+    }
+    if(type(g)== 4 /*double neg*/)return(mytail(mytail(g)));/*throw away first two chars*/
+
+
+    return(0);
 }        
 
 
 char *secondexp(char *g)
 {/* for alpha and beta formulas, but not for double negations, returns the second expansion formula*/ 
-    if (parse(g) == 3) /*binary fmla*/{
-        switch(bin(g)){
-            case('v'): return parttwo(g);break;
-            case('^'): return parttwo(g);break;
-            case('>'): return parttwo(g); break;
-        }
-    }
-    else if( parse(g)==2 && parse(mytail(g))==3){
+    if( g[0]=='-' && parse(mytail(g))==3){
         switch(bin(g)){
             case('v'): return negate(parttwo(g)); break;
             case('^'): return negate(parttwo(g)); break;
             case('>'): return negate(parttwo(g)); break;
+            default:printf("what the f**k?");return(0);
         }   
-    }   
+    }
+    else if (parse(g) == 3) /*binary fmla*/{
+        switch(bin(g)){
+            case('v'): return parttwo(g);break;
+            case('^'): return parttwo(g);break;
+            case('>'): return parttwo(g); break;
+            default:printf("what the f**k?");return(0);
+        }
+    }
+    return(0);
+       
 }
 
 
@@ -208,13 +231,13 @@ int closed1(struct tableau *t) /*check if p and not p at or above t*/
   else
     {
         char* string = t->root;
-        if (string[0] == '~'){
+        if (string[0] == '-'){
             string = mytail(string);               
         }
         else{
             string = negate(string);
         }
-        result =  find_above(t, string);
+        int result =  find_above(t, string);
         free(string); // Prevent Memory Leak
         return result;
     }
@@ -248,7 +271,7 @@ void add_one( struct tableau *t, char *g)/* adds g at every leaf below*/
 
 void alpha(struct tableau *t, char *g, char *h)/*not for double negs, adds g then h at every leaf below*/
 {
-    if (type(t) == 4) return;
+    if (type(t->root) != 2) return;
     add_one(t, g);
     add_one(t, h);
     return;
@@ -272,6 +295,7 @@ void  add_two(struct tableau *t, char *g, char *h)/*for beta s, adds g, h on sep
         new2->left = NULL, new2->right = NULL;
         t->right = new2;
         return;
+    }
 }
 
 void expand(struct tableau *t)/*must not be null.  Checks the root.  If literal, does nothing.  If beta calls add_two with suitable fmlas, if alpha calls alpha with suitable formulas unless a double negation then  */
@@ -319,17 +343,17 @@ int main()
     {j=parse(names[i]);
       switch(j)
 	{
-	case(0):fprintf(fpout,"%s is not a formula", names[i]);break;
-	case(1):fprintf(fpout,"%s is a proposition",names[i]);break;
-	case(2):fprintf(fpout,"%s is a negation",names[i]);break;
-	case(3):fprintf(fpout,"%s is a binary formula",names[i]);break;
-	default:fprintf(fpout,"%s is not a formula",names[i]);break;
+	case(0):printf("%s is not a formula\n", names[i]);break;
+	case(1):printf("%s is a proposition\n",names[i]);break;
+	case(2):printf("%s is a negation\n",names[i]);break;
+	case(3):printf("%s is a binary formula\n",names[i]);break;
+	default:printf("%s is not a formula\n",names[i]);break;
 	}
     }
  
   /*make 6 new tableaus each with name at root, no children, no parent*/
 
-  struct tableau tabs[inputs];
+ struct tableau tabs[inputs];
 
   for(i=0;i<inputs;i++)
     {
@@ -338,13 +362,13 @@ int main()
       tabs[i].left=NULL;
       tabs[i].right=NULL;
 
-      /*expand each tableau until complete, then see if closed */ 
+      //expand each tableau until complete, then see if closed  
 
       complete(&tabs[i]);
       if (closed(&tabs[i])) fprintf(fpout,"%s is not satisfiable\n", names[i]);
       else fprintf(fpout,"%s is satisfiable\n", names[i]);
     }
- 
+  
   fclose(fp);
   fclose(fpout);
  

@@ -219,9 +219,10 @@ You may vary this program provided it reads 6 formulas in a file called "input.t
 
 int find_above(struct tableau *t, char *g) /*Is g label of current node or above?*/
 {
+    if (t == NULL) return 0;
     if (strcmp(g, t->root) == 0) return 1;
     else{
-    return find_above(t->parent, g);
+        return find_above(t->parent, g);
     }
 }
 
@@ -238,7 +239,6 @@ int closed1(struct tableau *t) /*check if p and not p at or above t*/
             string = negate(string);
         }
         int result =  find_above(t, string);
-        free(string); // Prevent Memory Leak
         return result;
     }
 }
@@ -260,6 +260,7 @@ void add_one( struct tableau *t, char *g)/* adds g at every leaf below*/
         add_one(t->right, g);
     if(t->left == NULL && t->right == NULL){
         struct tableau* new = malloc(sizeof(struct tableau));   
+        new->root = malloc((strlen(g)+1)*sizeof(g));
         strcpy(new->root, g);
         new->parent = t;
         new->left = NULL;
@@ -285,11 +286,13 @@ void  add_two(struct tableau *t, char *g, char *h)/*for beta s, adds g, h on sep
         add_one(t->right, g);
     if(t->left == NULL && t->right == NULL){
         struct tableau* new1 = malloc(sizeof(struct tableau));
+        new1->root = malloc((strlen(g)+1)*sizeof(char));
         strcpy(new1->root, g);
         new1->parent = t;
         new1->left = NULL, new1->right = NULL;
         t->left = new1;
         struct tableau* new2 = malloc(sizeof(struct tableau));
+        new2->root = malloc((strlen(h)+1)*sizeof(char));
         strcpy(new2->root, h);
         new2->parent = t;
         new2->left = NULL, new2->right = NULL;

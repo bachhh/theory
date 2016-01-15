@@ -1,6 +1,6 @@
 (qvp) is satisfiable
--(p>(q>p)) is satisfiable
+-(p>(q>p)) is not satisfiable
 (pv-q) is satisfiable
 --p is satisfiable
--(pv-p) is satisfiable
-(p^-p) is not satisfiable
+-(pv-p) is not satisfiable
+-(((p^q)>r)>((p>r)v(q>r))) is not satisfiable

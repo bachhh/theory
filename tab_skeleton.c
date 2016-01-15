@@ -118,11 +118,12 @@ char bin(char *g)
 int type(char *g)
 {/*return 0 if not a formula, 1 for literal, 2 for alpha, 3 for beta, 4 for double negation*/
     
-    if (prop(g[0])==1||g[0]=='-'&&prop(g[1])==1)  {
+    if (prop(g[0])==1)  {
         return 1;
     } 
+    else if (g[0]=='-'&&prop(g[1])==1){return 1;}
     else if ((g[0]=='-') && parse(mytail(g))==2) return 4;
-    else if (g[0] == '-'&&parse(g)==3){
+    else if (g[0] == '-'&&parse(mytail(g))==3){ //Negated Binary
         switch(bin(g)){
             case('v'): return(2);break;
             case('>'): return(2);break;
@@ -130,7 +131,7 @@ int type(char *g)
         
         }
     }
-    else if(g[0] == '('&&parse(g)==3){
+    else if(g[0] == '('&&parse(g)==3){ // Normal Binary
         switch(bin(g)){
             case('v'): return(3);break;
             case('^'): return(2);break;
@@ -141,14 +142,25 @@ int type(char *g)
 }
 
 char *negate(char *g){
-    int length = strlen(g);
-    char* temp = malloc((length+2)*sizeof(char));
-    temp[0]='-';
-    for(int i=1;i<length+2; i++){
-        temp[i]=g[i-1];
+    if(g[0]=='-'){
+        int length = strlen(g);
+        char * temp = malloc(length*sizeof(char));
+        for (int i =0; i<length;i++){
+            temp[i] = g[i+1]; 
+        }
+        g[length] = '\0'; // Enforce that a string is null terminated
+        return temp; 
     }
-    temp[length+1]='\0';
-    return temp;
+    else {
+        int length = strlen(g);
+        char* temp = malloc((length+2)*sizeof(char));
+        temp[0]='-';
+        for(int i=1;i<length+2; i++){
+            temp[i]=g[i-1];
+        }
+        temp[length+1]='\0';
+        return temp;
+    }
 }
 
 char *firstexp(char *g)
@@ -156,9 +168,9 @@ char *firstexp(char *g)
     if (g[0]=='-'&&parse(mytail(g))==3){ /*negated binary*/ 
         switch(bin(mytail(g)))
         {
-            case('v'): return negate(partone(g));break;
-            case('^'): return negate(partone(g));break;
-            case('>'): return partone(g);break;
+            case('v'): return negate(partone(mytail(g)));break;
+            case('^'): return negate(partone(mytail(g)));break;
+            case('>'): return partone(mytail(g));break;
             default:printf("what the f**k?");return(0); // This line was originally in your template Robin :(
         }
     }
@@ -183,9 +195,9 @@ char *secondexp(char *g)
 {/* for alpha and beta formulas, but not for double negations, returns the second expansion formula*/ 
     if( g[0]=='-' && parse(mytail(g))==3){
         switch(bin(g)){
-            case('v'): return negate(parttwo(g)); break;
-            case('^'): return negate(parttwo(g)); break;
-            case('>'): return negate(parttwo(g)); break;
+            case('v'): return negate(parttwo(mytail(g))); break;
+            case('^'): return negate(parttwo(mytail(g))); break;
+            case('>'): return negate(parttwo(mytail(g))); break;
             default:printf("what the f**k?");return(0);
         }   
     }
